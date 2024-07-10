@@ -1,0 +1,15 @@
+path_file: [
+  #this is specific file
+  'C:\Users\judol\jdl.csv',
+
+  #this is using wildcard
+  'C:\Users\judol2\sektor*'
+
+  #this is scan whole folder
+  'C:\Users\judol3\*'
+  ]
+
+
+username_elastic: 'elastic'
+password_elastic: 'changeme'
+url_elastic: 'https://localhost:9200'
