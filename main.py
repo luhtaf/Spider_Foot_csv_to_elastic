@@ -14,6 +14,7 @@ class SpiderfootToElastic:
         passw=this._fim_config['password_elastic']
         url_elastic=this._fim_config['url_elastic']
         this._es = Elasticsearch(url_elastic,basic_auth=(username, passw),verify_certs=False)
+        this._es2 = Elasticsearch('https://10.12.20.204:9200',basic_auth=("th", "threathunt"),verify_certs=False)
         this._cache={}
         this._target=[]
         this._init_target()
@@ -53,7 +54,7 @@ class SpiderfootToElastic:
         if cve not in this._cache:
             tahun=this._get_tahun(cve)
             index=f'list-cve-{tahun}'
-            cve_data=this._es.get(index=index, id=cve)
+            cve_data=this._es2.get(index=index, id=cve)
             this._cache[cve]=cve_data['_source']
         return this._cache[cve]
     def _get_tahun(this,cve):
@@ -62,21 +63,25 @@ class SpiderfootToElastic:
         this._os.listdir()
     def _process_one_file(this,target):
         readed_target=open(target,"r")
-        scan_name=target.split("\\")
-        scan_name=scan_name[len(scan_name)-1].replace(".csv","")
+        # scan_name=target.split("\\")
+        # scan_name=scan_name[len(scan_name)-1].replace(".csv","")
         lines=readed_target.readlines()
         for urutan in range(len(lines)):
             data={}
             line=lines[urutan]
             terpisah=line.replace("\n","").split(',')
-            if scan_name in line:
+            if "organisasi" in line:
                 if urutan>0:
                     data['Scan Name']=terpisah[0]
                     data['Updated']=terpisah[1]
                     data['Type']=terpisah[2]
                     data['Module']=terpisah[3]
                     data['Source']=terpisah[4]
-                    data['F/P']=int(terpisah[5])
+                    try:
+                        this.FP=int(terpisah[5])                      
+                    except:
+                        this.FP=0
+                    data['F/P']=this.FP
                     data['Data']=terpisah[6].replace('"','')
                     data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(scan_name)
                     updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
