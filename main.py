@@ -83,7 +83,7 @@ class SpiderfootToElastic:
                         this.FP=0
                     data['F/P']=this.FP
                     data['Data']=terpisah[6].replace('"','')
-                    data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(scan_name)
+                    data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(data['Scan Name'])
                     updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
                     data['@timestamp'] = updated_time
                     if 'CVE' in data['Data']:
