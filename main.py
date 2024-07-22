@@ -33,7 +33,7 @@ class SpiderfootToElastic:
         case_value=hasil['case'].replace('_',' ').title()
         sector_value=hasil['sektor'].replace('_',' ').title()
         organisasi_value=hasil['organisasi'].replace('_',' ').title()
-        target_value=hasil['target'].replace('_',' ').title()
+        target_value=hasil['target']
         return case_value,sector_value,organisasi_value,target_value
     def _get_wildcard_file(this,input_string):
         path = this._os.path.split(input_string)[0]  # Get only the path
