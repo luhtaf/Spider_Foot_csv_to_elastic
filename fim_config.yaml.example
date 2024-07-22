@@ -2,7 +2,7 @@ path_file: [
   #this is specific file
   'C:\Users\judol\jdl.csv',
 
-  #this is using wildcard
+  #this is using wildcard 
   'C:\Users\judol2\sektor*',
 
   #this is scan whole folder
