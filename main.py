@@ -30,10 +30,10 @@ class SpiderfootToElastic:
         pattern='%{DATA:case}_sektor_%{DATA:sektor}_organisasi_%{DATA:organisasi}_target_%{GREEDYDATA:target}'
         grok = this._grok(pattern)
         hasil=grok.match(input_string)
-        case_value=hasil['case'].split('_',' ').title()
-        sector_value=hasil['sektor'].split('_',' ').title()
-        organisasi_value=hasil['organisasi'].split('_',' ').title()
-        target_value=hasil['target'].split('_',' ').title()
+        case_value=hasil['case'].replace('_',' ').title()
+        sector_value=hasil['sektor'].replace('_',' ').title()
+        organisasi_value=hasil['organisasi'].replace('_',' ').title()
+        target_value=hasil['target'].replace('_',' ').title()
         return case_value,sector_value,organisasi_value,target_value
     def _get_wildcard_file(this,input_string):
         path = this._os.path.split(input_string)[0]  # Get only the path
@@ -75,8 +75,9 @@ class SpiderfootToElastic:
                     data['Data']=terpisah[6].replace('"','')
                     try:
                         data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(data['Scan Name'])
-                    except:
-                        data['error']=f'Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}'
+                    except Exception as e:
+                        print(e)
+                        data['error']=f"Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}"
                     updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
                     data['@timestamp'] = updated_time
                     if 'CVE' in data['Data']:
@@ -103,4 +104,5 @@ class SpiderfootToElastic:
             pass
 
 es=SpiderfootToElastic()
+
 es.start()
