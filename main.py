@@ -10,17 +10,19 @@ class SpiderfootToElastic:
         this._glob=glob
         this._os=os
         this._re=re
+        
         this._custom_library=custom_library
-        this._fim_config=custom_library.load_yaml('./fim_config.yaml')
-        username=this._fim_config['username_elastic']
-        passw=this._fim_config['password_elastic']
-        url_elastic=this._fim_config['url_elastic']
+        this._konfigurasi=custom_library.load_yaml('./fim_config.yaml')
+        this._tipe_tidak_terpakai=this._konfigrasi['tipe_tidak_terpakai']
+        username=this._konfigurasi['username_elastic']
+        passw=this._konfigurasi['password_elastic']
+        url_elastic=this._konfigurasi['url_elastic']
         this._es = Elasticsearch(url_elastic,basic_auth=(username, passw),verify_certs=False)
         this._cache={}
         this._target=[]
         this._init_target()
     def _init_target(this):
-        target=this._fim_config['path_file']
+        target=this._konfigurasi['path_file']
         for i in target:
             if i.endswith("*"):
                 this._get_wildcard_file(i)
@@ -67,37 +69,39 @@ class SpiderfootToElastic:
                     data['Type']=terpisah[2]
                     data['Module']=terpisah[3]
                     data['Source']=terpisah[4]
-                    try:
-                        this.FP=int(terpisah[5])                      
-                    except:
-                        this.FP=0
-                    data['F/P']=this.FP
-                    data['Data']=terpisah[6].replace('"','')
-                    try:
-                        data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(data['Scan Name'])
-                    except Exception as e:
-                        print(e)
-                        data['error']=f"Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}"
-                    updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
-                    data['@timestamp'] = updated_time
-                    if 'CVE' in data['Data']:
-                        data['Vuln']=data['Data']
-                        this._update_cache(data['Data'])
+                    tidak_terpakai = True if data['Type'] in this._tipe_tidak_terpakai else False
+                    if not tidak_terpakai:
                         try:
-                            data['Score']=this._cache[data['Data']]['v3']['score']
+                            this.FP=int(terpisah[5])                      
                         except:
-                            try:
-                                data['Score']=this._cache[data['Data']]['v2']['score']
-                            except:pass
-                        
+                            this.FP=0
+                        data['F/P']=this.FP
+                        data['Data']=terpisah[6].replace('"','')
                         try:
-                            data['Severity']=this._cache[data['Data']]['v3']['sev']
-                        except:
+                            data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(data['Scan Name'])
+                        except Exception as e:
+                            print(e)
+                            data['error']=f"Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}"
+                        updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
+                        data['@timestamp'] = updated_time
+                        if 'CVE' in data['Data']:
+                            data['Vuln']=data['Data']
+                            this._update_cache(data['Data'])
                             try:
-                                data['Severity']=this._cache[data['Data']]['v2']['sev']
-                            except:pass
-                    timestamp=data['Updated'].split(" ")[0].replace("-",".")
-                    this._es.index(index=f"nasional_cve-{timestamp}",body=data)
+                                data['Score']=this._cache[data['Data']]['v3']['score']
+                            except:
+                                try:
+                                    data['Score']=this._cache[data['Data']]['v2']['score']
+                                except:pass
+                            
+                            try:
+                                data['Severity']=this._cache[data['Data']]['v3']['sev']
+                            except:
+                                try:
+                                    data['Severity']=this._cache[data['Data']]['v2']['sev']
+                                except:pass
+                        timestamp=data['Updated'].split(" ")[0].replace("-",".")
+                        this._es.index(index=f"nasional_cve-{timestamp}",body=data)
     def start(this):
         for target in this._target:
             this._process_one_file(target)

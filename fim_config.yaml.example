@@ -9,7 +9,9 @@ path_file: [
   'C:\Users\judol3\*'
   ]
 
-
+tipe_tidak_terpakai: [
+  'RAW_RIR_DATA',
+]
 username_elastic: 'elastic'
 password_elastic: 'changeme'
 url_elastic: 'https://localhost:9200'
