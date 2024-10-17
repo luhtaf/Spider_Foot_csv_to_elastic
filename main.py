@@ -69,8 +69,9 @@ class SpiderfootToElastic:
                     data['Type']=terpisah[2]
                     data['Module']=terpisah[3]
                     data['Source']=terpisah[4]
+                    data_kosong = True if data['Source']== '"' else False
                     tidak_terpakai = True if data['Type'] in this._tipe_tidak_terpakai else False
-                    if not tidak_terpakai:
+                    if not tidak_terpakai and not data_kosong:
                         try:
                             this.FP=int(terpisah[5])                      
                         except:
