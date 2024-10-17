@@ -11,7 +11,11 @@ path_file: [
 
 tipe_tidak_terpakai: [
   'RAW_RIR_DATA',
+  'INTERNET_NAME_UNRESOLVED'
 ]
+
+type: 'production/test'
+
 username_elastic: 'elastic'
 password_elastic: 'changeme'
 url_elastic: 'https://localhost:9200'

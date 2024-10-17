@@ -16,6 +16,7 @@ class SpiderfootToElastic:
         this._tipe_tidak_terpakai=this._konfigurasi['tipe_tidak_terpakai']
         username=this._konfigurasi['username_elastic']
         passw=this._konfigurasi['password_elastic']
+        this._tipe=this._konfigurasi['type']
         url_elastic=this._konfigurasi['url_elastic']
         this._es = Elasticsearch(url_elastic,basic_auth=(username, passw),verify_certs=False)
         this._cache={}
@@ -102,7 +103,8 @@ class SpiderfootToElastic:
                                     data['Severity']=this._cache[data['Data']]['v2']['sev']
                                 except:pass
                         timestamp=data['Updated'].split(" ")[0].replace("-",".")
-                        this._es.index(index=f"nasional_cve-{timestamp}",body=data)
+                        if this._type=='production':
+                            this._es.index(index=f"nasional_cve-{timestamp}",body=data)
     def start(this):
         for target in this._target:
             this._process_one_file(target)
