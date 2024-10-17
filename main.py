@@ -13,7 +13,7 @@ class SpiderfootToElastic:
         
         this._custom_library=custom_library
         this._konfigurasi=custom_library.load_yaml('./fim_config.yaml')
-        this._tipe_tidak_terpakai=this._konfigrasi['tipe_tidak_terpakai']
+        this._tipe_tidak_terpakai=this._konfigurasi['tipe_tidak_terpakai']
         username=this._konfigurasi['username_elastic']
         passw=this._konfigurasi['password_elastic']
         url_elastic=this._konfigurasi['url_elastic']
