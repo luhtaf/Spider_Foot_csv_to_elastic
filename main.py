@@ -57,7 +57,7 @@ class SpiderfootToElastic:
     def _read_dir(this):
         this._os.listdir()
     def _process_one_file(this,target):
-        readed_target=open(target,"r")
+        readed_target=open(target,"r", errors='ignore')
         lines=readed_target.readlines()
         for urutan in range(len(lines)):
             data={}
@@ -73,38 +73,44 @@ class SpiderfootToElastic:
                     data_kosong = True if data['Source']== '"' else False
                     tidak_terpakai = True if data['Type'] in this._tipe_tidak_terpakai else False
                     if not tidak_terpakai and not data_kosong:
+                        lewati=False
                         try:
                             this.FP=int(terpisah[5])                      
                         except:
                             this.FP=0
                         data['F/P']=this.FP
-                        data['Data']=terpisah[6].replace('"','')
                         try:
-                            data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(data['Scan Name'])
-                        except Exception as e:
-                            print(e)
-                            data['error']=f"Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}"
-                        updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
-                        data['@timestamp'] = updated_time
-                        if 'CVE' in data['Data']:
-                            data['Vuln']=data['Data']
-                            this._update_cache(data['Data'])
+                            data['Data']=terpisah[6].replace('"','')
+                        except:
+                            print(f"error saat parsing data ke {urutan}, datanya {str(terpisah)}")
+                            lewati=True
+                        if not lewati:
                             try:
-                                data['Score']=this._cache[data['Data']]['v3']['score']
-                            except:
+                                data['Case'],data['Sektor'],data['Organisasi'],data['Target']=this._get_sektor_organisasi_from_string(data['Scan Name'])
+                            except Exception as e:
+                                print(e)
+                                data['error']=f"Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}"
+                            updated_time = this._datetime.strptime(data['Updated'], "%Y-%m-%d %H:%M:%S").isoformat(sep="T") + f".{0:03d}+07:00"
+                            data['@timestamp'] = updated_time
+                            if 'CVE' in data['Data']:
+                                data['Vuln']=data['Data']
+                                this._update_cache(data['Data'])
                                 try:
-                                    data['Score']=this._cache[data['Data']]['v2']['score']
-                                except:pass
-                            
-                            try:
-                                data['Severity']=this._cache[data['Data']]['v3']['sev']
-                            except:
+                                    data['Score']=this._cache[data['Data']]['v3']['score']
+                                except:
+                                    try:
+                                        data['Score']=this._cache[data['Data']]['v2']['score']
+                                    except:pass
+                                
                                 try:
-                                    data['Severity']=this._cache[data['Data']]['v2']['sev']
-                                except:pass
-                        timestamp=data['Updated'].split(" ")[0].replace("-",".")
-                        if this._tipe=='production':
-                            this._es.index(index=f"nasional_cve-{timestamp}",body=data)
+                                    data['Severity']=this._cache[data['Data']]['v3']['sev']
+                                except:
+                                    try:
+                                        data['Severity']=this._cache[data['Data']]['v2']['sev']
+                                    except:pass
+                            timestamp=data['Updated'].split(" ")[0].replace("-",".")
+                            if this._tipe=='production':
+                                this._es.index(index=f"nasional_cve-{timestamp}",body=data)
     def start(this):
         for target in this._target:
             this._process_one_file(target)
