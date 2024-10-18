@@ -103,7 +103,7 @@ class SpiderfootToElastic:
                                     data['Severity']=this._cache[data['Data']]['v2']['sev']
                                 except:pass
                         timestamp=data['Updated'].split(" ")[0].replace("-",".")
-                        if this._type=='production':
+                        if this._tipe=='production':
                             this._es.index(index=f"nasional_cve-{timestamp}",body=data)
     def start(this):
         for target in this._target:
