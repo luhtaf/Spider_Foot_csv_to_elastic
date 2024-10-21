@@ -48,13 +48,18 @@ class SpiderfootToElastic:
                 this._target.append(filename)
     def _update_cache(this,cve):
         if cve not in this._cache:
-            tahun=this._get_tahun(cve)
-            index=f'list-cve-*'
-            cve_data=this._es.get(index=index, id=cve)
+            index='list-cve-*'
+            search_body = {
+                "query": {
+                    "term": {
+                        "_id": cve
+                    }
+                }
+            }
+            cve_data=this._es.search(index=index, body=search_body)
+            print(cve_data['hits']['hits'][0])
             this._cache[cve]=cve_data['_source']
         return this._cache[cve]
-    def _get_tahun(this,cve):
-        return cve.split('-')[1]
     def _read_dir(this):
         this._os.listdir()
     def _process_one_file(this,target):
