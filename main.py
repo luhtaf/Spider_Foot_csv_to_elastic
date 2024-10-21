@@ -57,8 +57,7 @@ class SpiderfootToElastic:
                 }
             }
             cve_data=this._es.search(index=index, body=search_body)
-            print(cve_data['hits']['hits'][0])
-            this._cache[cve]=cve_data['_source']
+            this._cache[cve]=cve_data['hits']['hits'][0]['_source']
         return this._cache[cve]
     def _read_dir(this):
         this._os.listdir()
