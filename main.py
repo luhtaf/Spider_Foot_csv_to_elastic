@@ -14,6 +14,7 @@ class SpiderfootToElastic:
         this._custom_library=custom_library
         this._konfigurasi=custom_library.load_yaml('./fim_config.yaml')
         this._tipe_tidak_terpakai=this._konfigurasi['tipe_tidak_terpakai']
+        this._modul_tidak_terpakai=this._konfigurasi['modul_tidak_terpakai']
         username=this._konfigurasi['username_elastic']
         passw=this._konfigurasi['password_elastic']
         this._tipe=this._konfigurasi['type']
@@ -72,6 +73,7 @@ class SpiderfootToElastic:
                     data['Source']=terpisah[4]
                     data_kosong = True if data['Source']== '"' else False
                     tidak_terpakai = True if data['Type'] in this._tipe_tidak_terpakai else False
+                    tidak_terpakai = True if data['Module'] in this._modul_tidak_terpakai else False
                     if not tidak_terpakai and not data_kosong:
                         lewati=False
                         try:
@@ -94,20 +96,24 @@ class SpiderfootToElastic:
                             data['@timestamp'] = updated_time
                             if 'CVE' in data['Data']:
                                 data['Vuln']=data['Data']
-                                this._update_cache(data['Data'])
                                 try:
-                                    data['Score']=this._cache[data['Data']]['v3']['score']
-                                except:
+                                    this._update_cache(data['Data'])
                                     try:
-                                        data['Score']=this._cache[data['Data']]['v2']['score']
-                                    except:pass
-                                
-                                try:
-                                    data['Severity']=this._cache[data['Data']]['v3']['sev']
-                                except:
+                                        data['Score']=this._cache[data['Data']]['v3']['score']
+                                    except:
+                                        try:
+                                            data['Score']=this._cache[data['Data']]['v2']['score']
+                                        except:pass
+                                    
                                     try:
-                                        data['Severity']=this._cache[data['Data']]['v2']['sev']
-                                    except:pass
+                                        data['Severity']=this._cache[data['Data']]['v3']['sev']
+                                    except:
+                                        try:
+                                            data['Severity']=this._cache[data['Data']]['v2']['sev']
+                                        except:pass
+                                except:
+                                    data['Score']='N/A'
+                                    data['Severity']='N/A'
                             timestamp=data['Updated'].split(" ")[0].replace("-",".")
                             if this._tipe=='production':
                                 this._es.index(index=f"nasional_cve-{timestamp}",body=data)

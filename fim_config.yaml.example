@@ -14,6 +14,10 @@ tipe_tidak_terpakai: [
   'INTERNET_NAME_UNRESOLVED'
 ]
 
+modul_tidak_terpakai: [
+  'sfp_dnsresolve'
+]
+
 type: 'production/test'
 
 username_elastic: 'elastic'
