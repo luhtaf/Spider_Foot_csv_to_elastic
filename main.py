@@ -49,7 +49,7 @@ class SpiderfootToElastic:
     def _update_cache(this,cve):
         if cve not in this._cache:
             tahun=this._get_tahun(cve)
-            index=f'list-cve-{tahun}'
+            index=f'list-cve-*'
             cve_data=this._es.get(index=index, id=cve)
             this._cache[cve]=cve_data['_source']
         return this._cache[cve]
@@ -104,7 +104,6 @@ class SpiderfootToElastic:
                                         try:
                                             data['Score']=this._cache[data['Data']]['v2']['score']
                                         except:pass
-                                    
                                     try:
                                         data['Severity']=this._cache[data['Data']]['v3']['sev']
                                     except:
