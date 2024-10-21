@@ -115,7 +115,7 @@ class SpiderfootToElastic:
                                             data['Severity']=this._cache[data['Data']]['v2']['sev']
                                         except:pass
                                 except:
-                                    data['Score']='N/A'
+                                    data['Score']=0.0
                                     data['Severity']='N/A'
                             timestamp=data['Updated'].split(" ")[0].replace("-",".")
                             if this._tipe=='production':
