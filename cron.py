@@ -65,43 +65,6 @@ def read_sql_query(config):
         print("Please create the SQL file with your query before running this program.")
         sys.exit(1)
 
-def read_vulnerabilities(db_path, last_timestamp, config):
-    """
-    Read vulnerability data from SpiderFoot SQLite database
-    Only include records where generated > last_timestamp
-    """
-    # Load SQL query from file
-    base_query = read_sql_query(config)
-    
-    try:
-        # Connect to SQLite database
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row  # This enables column access by name
-        cursor = conn.cursor()
-        
-        # Execute the query with the timestamp parameter
-        cursor.execute(base_query, (last_timestamp,))
-        
-        # Fetch all results
-        results = cursor.fetchall()
-        
-        print(f"Found {len(results)} new vulnerability records since {datetime.fromtimestamp(last_timestamp)}")
-        
-        # Process and return the results
-        vulnerability_data = []
-        for row in results:
-            data = dict(row)
-            vulnerability_data.append(data)
-            
-        return vulnerability_data
-    
-    except sqlite3.Error as e:
-        print(f"SQLite error: {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
-
 def get_sektor_organisasi_from_string(input_string):
     """
     Extract case, sector, organization and target from scan name
@@ -118,16 +81,15 @@ def get_sektor_organisasi_from_string(input_string):
         return case_value, sector_value, organisasi_value, target_value
     return None, None, None, None
 
-def process_and_index_vulnerabilities(es, config, vulnerability_data, index_name):
+def process_and_index_batch(es, config, batch_data):
     """
-    Process vulnerability data and index to Elasticsearch
-    Similar to _process_one_file in main.py
+    Process and index a batch of vulnerability data to Elasticsearch
     """
     indexed_count = 0
     cache = {}
     tipe = config.get('type', 'development')
     
-    for vuln in vulnerability_data:
+    for vuln in batch_data:
         data = {}
         # Map fields from SQLite to Elasticsearch format
         data['Scan Name'] = vuln.get('SCAN_NAME', '')
@@ -138,7 +100,7 @@ def process_and_index_vulnerabilities(es, config, vulnerability_data, index_name
         data['F/P'] = 0  # Default value as it's not in the SQLite data
         data['Data'] = vuln.get('data', '')
         
-        # Skip if source is empty or type is in tipe_tidak_terpakai
+        # Skip if source is empty 
         if not data['Source'] or data['Source'] == '"':
             continue
         
@@ -159,7 +121,6 @@ def process_and_index_vulnerabilities(es, config, vulnerability_data, index_name
             data['Vuln'] = vuln_data
             try:
                 # Try to update CVE information from cache or Elasticsearch
-                # Similar to _update_cache in main.py
                 if vuln_data not in cache:
                     index = 'list-cve-*'
                     search_body = {
@@ -198,6 +159,7 @@ def process_and_index_vulnerabilities(es, config, vulnerability_data, index_name
         
         # Index to Elasticsearch
         timestamp = data['Updated'].split(" ")[0].replace("-", ".")
+        index_name = config.get('elastic_index', 'nasional_cve')
         if tipe == 'production':
             try:
                 es.index(index=f"{index_name}-{timestamp}", body=data)
@@ -207,17 +169,75 @@ def process_and_index_vulnerabilities(es, config, vulnerability_data, index_name
                 print(f"Error indexing to Elasticsearch: {e}")
         else:
             print(f"Development mode - would index: {data['Scan Name']} - {vuln_data}")
-            print(data)
             indexed_count += 1
     
     return indexed_count
+
+def process_vulnerabilities_in_batches(db_path, last_timestamp, config, es, batch_size=100):
+    """
+    Process vulnerability data in batches to avoid memory issues
+    """
+    base_query = read_sql_query(config)
+    offset = 0
+    total_indexed = 0
+    total_processed = 0
+    
+    # Remove existing LIMIT clause if any to allow for our own batching
+    if "LIMIT" in base_query:
+        base_query = base_query.split('LIMIT')[0].strip()
+    
+    while True:
+        # Query for one batch
+        paginated_query = f"{base_query} LIMIT {batch_size} OFFSET {offset}"
+        
+        try:
+            # Connect to SQLite database
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Execute the query with the timestamp parameter
+            cursor.execute(paginated_query, (last_timestamp,))
+            
+            # Fetch results for this batch
+            results = cursor.fetchall()
+            
+            # No more results? We're done
+            if not results:
+                break
+                
+            # Convert to list of dictionaries
+            batch_data = [dict(row) for row in results]
+            total_processed += len(batch_data)
+            
+            print(f"Processing batch {offset//batch_size + 1}, records: {len(batch_data)}")
+            
+            # Process and index this batch
+            batch_indexed = process_and_index_batch(es, config, batch_data)
+            total_indexed += batch_indexed
+            
+            # Move to next batch
+            offset += batch_size
+            
+            # Optional: small delay between batches to reduce load
+            time.sleep(0.5)
+            
+        except sqlite3.Error as e:
+            print(f"SQLite error: {e}")
+            break
+        finally:
+            if conn:
+                conn.close()
+    
+    print(f"Total records processed: {total_processed}")
+    return total_indexed
 
 def main():
     # Load configuration
     config = load_config()
     
-    # Get database path from config or use default
-    db_path = config.get('spiderfoot', {}).get('database_path', 'spiderfoot.db')
+    # Get database path directly from config
+    db_path = config.get('database_path', 'spiderfoot.db')
     
     if not os.path.exists(db_path):
         print(f"Error: Database file not found at '{db_path}'")
@@ -227,7 +247,6 @@ def main():
     username = config.get('username_elastic', '')
     passw = config.get('password_elastic', '')
     url_elastic = config.get('url_elastic', 'http://localhost:9200')
-    index_name = config.get('elastic_index', 'nasional_cve_new')
     
     es = Elasticsearch(url_elastic, basic_auth=(username, passw), verify_certs=False)
     
@@ -235,13 +254,15 @@ def main():
     last_timestamp = get_last_timestamp(config)
     print(f"Last run timestamp: {last_timestamp} ({datetime.fromtimestamp(last_timestamp)})")
     
-    # Read vulnerability data newer than the last timestamp
-    vulnerability_data = read_vulnerabilities(db_path, last_timestamp, config)
+    # Process vulnerability data in batches
+    batch_size = config.get('batch_size', 100)
+    print(f"Using batch size: {batch_size}")
     
-    if vulnerability_data:
-        # Process and index to Elasticsearch
-        indexed_count = process_and_index_vulnerabilities(es, config, vulnerability_data, index_name)
-        print(f"Successfully indexed {indexed_count} documents to Elasticsearch")
+    # Process and index vulnerabilities in batches
+    total_indexed = process_vulnerabilities_in_batches(db_path, last_timestamp, config, es, batch_size)
+    
+    if total_indexed > 0:
+        print(f"Successfully indexed {total_indexed} documents to Elasticsearch")
         
         # Update timestamp with current time to mark completion
         update_timestamp(config)

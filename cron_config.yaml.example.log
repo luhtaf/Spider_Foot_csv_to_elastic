@@ -1,8 +1,15 @@
-type: 'productio'
-
-username_elastic: 'elastic_username'
-password_elastic: 'elastic_password'
-url_elastic: 'url_elastic'
-elastic_index: 'index_name'
+# Basic configuration
 timestamp_file: "timestamp_cron.txt"
 sql_query_file: "spiderfoot.sql"
+database_path: "spiderfoot.db"  # Path to your SpiderFoot database
+batch_size: 100  # How many records to process in each batch
+elastic_index: "nasional_cve"  # Base name for Elasticsearch index
+spiderfoot:
+  database_path: "/home/spiderman/.spiderfoot/spiderfoot.db"
+
+
+# Elasticsearch connection
+username_elastic: "your_username"
+password_elastic: "your_password" 
+url_elastic: "http://localhost:9200"
+type: "development"  # Use "production" to actually index to Elasticsearch
