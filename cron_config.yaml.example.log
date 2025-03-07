@@ -1,0 +1,8 @@
+type: 'productio'
+
+username_elastic: 'elastic_username'
+password_elastic: 'elastic_password'
+url_elastic: 'url_elastic'
+elastic_index: 'index_name'
+timestamp_file: "timestamp_cron.txt"
+sql_query_file: "spiderfoot.sql"
