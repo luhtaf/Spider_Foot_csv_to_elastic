@@ -10,13 +10,13 @@ from pygrok import Grok
 
 def load_config():
     """
-    Load configuration from fim_config.yaml
+    Load configuration from cron_config.yaml
     """
     try:
-        with open('fim_config.yaml', 'r') as config_file:
+        with open('cron_config.yaml', 'r') as config_file:
             return yaml.safe_load(config_file)
     except FileNotFoundError:
-        print("Error: Configuration file 'fim_config.yaml' not found. Please copy from 'fim_config.yaml.example'.")
+        print("Error: Configuration file 'cron_config.yaml' not found. Please copy from 'cron_config.yaml.example'.")
         sys.exit(1)
     except yaml.YAMLError as e:
         print(f"Error parsing configuration file: {e}")
