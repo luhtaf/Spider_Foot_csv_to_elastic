@@ -32,9 +32,7 @@ version = int(config.get('version', 1))
 
 es = Elasticsearch(url_elastic, basic_auth=(username, passw), verify_certs=False)
 
-
-while True:
-    query = {
+query = {
         "query": {
             "bool": {
                 "should": [
@@ -44,7 +42,7 @@ while True:
             }
         }
     }
-
+while True:
     resp = es.search(index=f"{index_name}*", body=query, size=1000, from_=0)
     hits = resp['hits']['hits']
     if not hits:
@@ -61,6 +59,5 @@ while True:
         index=i['_index']
         _id=i['_id']
         es.update(index=index, id=_id, body={"doc": data})
-
     
     time.sleep(1)
