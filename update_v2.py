@@ -36,8 +36,8 @@ query = {
     "query": {
         "bool": {
             "should": [
-                {"range": {"versi": {"lt": version}}},
-                {"bool": {"must_not": {"exists": {"field": "versi"}}}}
+                {"range": {"version": {"lt": version}}},
+                {"bool": {"must_not": {"exists": {"field": "version"}}}}
             ]
         }
     },
@@ -51,7 +51,7 @@ while True:
         print("✅ Tidak ada data lagi. Berhenti.")
         break
     for i in hits:
-        data={"versi": version}
+        data={"version": version}
         try:
             result = df.loc[df['Nama'] == i['_source']['Organisasi'], 'Subsektor'].values[0]
             data['Subsektor'] = result
