@@ -27,7 +27,7 @@ url_elastic = config.get('url_elastic', 'http://localhost:9200')
 index_name = config.get('elastic_index', 'nasional_cve')
 
 csv_source = config.get('csv_source', 'cve_data.csv')
-df = pd.read_csv("pemda_pempus.csv", sep=';')
+df = pd.read_csv(csv_source, sep=';')
 version = int(config.get('version', 1))
 
 es = Elasticsearch(url_elastic, basic_auth=(username, passw), verify_certs=False)
