@@ -51,7 +51,7 @@ while True:
         print("✅ Tidak ada data lagi. Berhenti.")
         break
     for i in hits:
-        data={"version": version}
+        data={"versi": version}
         try:
             result = df.loc[df['Nama'] == i['_source']['Organisasi'], 'Subsektor'].values[0]
             data['Subsektor'] = result
