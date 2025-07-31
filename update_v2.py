@@ -32,16 +32,6 @@ version = int(config.get('version', 1))
 
 es = Elasticsearch(url_elastic, basic_auth=(username, passw), verify_certs=False)
 
-# query = {
-#         "query": {
-#             "bool": {
-#                 "should": [
-#                     {"range": {"versi": {"lt": version}}},
-#                     {"bool": {"must_not": {"exists": {"field": "versi"}}}}
-#                 ]
-#             }
-#         }
-#     }
 query = {
     "query": {
         "bool": {
@@ -54,9 +44,7 @@ query = {
     "size": 10000,      # ✅ pindahkan ke body
     "from": 0          # ✅ pindahkan ke body
 }
-while True:
-    # resp = es.search(index=f"{index_name}*", body=query, size=1000, from_=0)
-    
+while True:    
     resp = es.search(index=f"{index_name}*", body=query)
     hits = resp['hits']['hits']
     if not hits:

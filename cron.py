@@ -89,7 +89,7 @@ def process_and_index_batch(es, config, batch_data, df):
     indexed_count = 0
     cache = {}
     tipe = config.get('type', 'development')
-    
+    version = int(config.get('version', 1))
     for vuln in batch_data:
         data = {}
         # Map fields from SQLite to Elasticsearch format
@@ -100,6 +100,7 @@ def process_and_index_batch(es, config, batch_data, df):
         data['Source'] = vuln.get('IP_Addresses', '')
         data['F/P'] = 0  # Default value as it's not in the SQLite data
         data['Data'] = vuln.get('data', '')
+        data['version'] = version
 
         # Skip if source is empty 
         if not data['Source'] or data['Source'] == '"':
@@ -192,7 +193,8 @@ def process_vulnerabilities_in_batches(db_path, last_timestamp, config, es, batc
     # Remove existing LIMIT clause if any to allow for our own batching
     if "LIMIT" in base_query:
         base_query = base_query.split('LIMIT')[0].strip()
-    df = pd.read_csv("pemda_pempus.csv", sep=';')
+    csv_source = config.get('csv_source', 'cve_data.csv')
+    df = pd.read_csv(csv_source, sep=';')
     while True:
         # Query for one batch
         paginated_query = f"{base_query} LIMIT {batch_size} OFFSET {offset}"
