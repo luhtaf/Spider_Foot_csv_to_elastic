@@ -13,3 +13,6 @@ username_elastic: "your_username"
 password_elastic: "your_password" 
 url_elastic: "http://localhost:9200"
 type: "development"  # Use "production" to actually index to Elasticsearch
+
+version: '2'
+csv_source: "pemda_pempus.csv"

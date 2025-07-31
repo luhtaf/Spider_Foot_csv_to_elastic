@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from elasticsearch import Elasticsearch
 from pygrok import Grok
+import pandas as pd
 
 def load_config():
     """
@@ -81,7 +82,7 @@ def get_sektor_organisasi_from_string(input_string):
         return case_value, sector_value, organisasi_value, target_value
     return None, None, None, None
 
-def process_and_index_batch(es, config, batch_data):
+def process_and_index_batch(es, config, batch_data, df):
     """
     Process and index a batch of vulnerability data to Elasticsearch
     """
@@ -99,7 +100,7 @@ def process_and_index_batch(es, config, batch_data):
         data['Source'] = vuln.get('IP_Addresses', '')
         data['F/P'] = 0  # Default value as it's not in the SQLite data
         data['Data'] = vuln.get('data', '')
-        
+
         # Skip if source is empty 
         if not data['Source'] or data['Source'] == '"':
             continue
@@ -107,6 +108,12 @@ def process_and_index_batch(es, config, batch_data):
         # Try to extract case, sector, organization and target from scan name
         try:
             data['Case'], data['Sektor'], data['Organisasi'], data['Target'] = get_sektor_organisasi_from_string(data['Scan Name'])
+            try:
+                result = df.loc[df['Nama'] == data['Organisasi'], 'Subsektor'].values[0]
+                data['Subsektor'] = result
+            except Exception as e:
+                print(e)
+                data['Subsektor'] = ""
         except Exception as e:
             print(e)
             data['error'] = f"Format Scan Name Salah, gagal mengambil data Case, Sektor, Organisasi, dan Target: {data['Scan Name']}"
@@ -185,7 +192,7 @@ def process_vulnerabilities_in_batches(db_path, last_timestamp, config, es, batc
     # Remove existing LIMIT clause if any to allow for our own batching
     if "LIMIT" in base_query:
         base_query = base_query.split('LIMIT')[0].strip()
-    
+    df = pd.read_csv("pemda_pempus.csv", sep=';')
     while True:
         # Query for one batch
         paginated_query = f"{base_query} LIMIT {batch_size} OFFSET {offset}"
@@ -213,7 +220,7 @@ def process_vulnerabilities_in_batches(db_path, last_timestamp, config, es, batc
             print(f"Processing batch {offset//batch_size + 1}, records: {len(batch_data)}")
             
             # Process and index this batch
-            batch_indexed = process_and_index_batch(es, config, batch_data)
+            batch_indexed = process_and_index_batch(es, config, batch_data, df)
             total_indexed += batch_indexed
             
             # Move to next batch
